@@ -1,0 +1,17 @@
+library(rvest)
+library(dplyr)
+library(tidyverse)
+
+url2 <- 'http://www.espn.com/mlb/freeagents'
+
+y <- read_html(url2, as.data.frame=T) %>%
+  html_nodes("table") %>%
+  html_table(fill=T)
+View(y)
+
+avgage <- y[[1]]a
+colnames(avgage) <- avgage[2,]
+avgage <- avgage[-c(1,which(avgage == "PLAYER")),]
+avgage$AGE <- as.numeric(avgage$AGE)
+
+median(avgage$AGE)
