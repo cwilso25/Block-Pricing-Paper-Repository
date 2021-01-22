@@ -1,0 +1,72 @@
+#install.package("rvest")
+library(rvest)
+library(dplyr)
+library(tidyverse)
+
+url <- "https://www.spotrac.com/mlb/contracts/sort-value/limit-2000/"
+
+x <- read_html(url, as.data.frame=T) %>%
+  html_nodes("table") %>%
+  html_table(fill=T)
+
+contracts2015 <- x[[1]] %>%
+  separate(Player,c("a1","a2","a3","a4","a5","a6",
+                    "a7","Name","a9","a10",
+                    "a11","a12","a13","a14",
+                    "a15","a16","a17","Year_Signed"),"\n") %>%
+  select("Name","Year_Signed","Signed Age","Yrs","Value","AAV","Signing Bonus")
+contracts2015$Year_Signed <- substring(contracts2015$Year_Signed,22,25)
+
+
+url2 <- "https://www.spotrac.com/mlb/contracts/sort-value/all-time/limit-2000/"
+x <- read_html(url2, as.data.frame=T) %>%
+  html_nodes("table") %>%
+  html_table(fill=T)
+
+contracts2000 <- x[[1]] %>%
+  separate(Player,c("a1","a2","a3","a4","a5","a6",
+                    "a7","Name","a9","a10",
+                    "a11","a12","a13","a14",
+                    "a15","a16","a17","Year_Signed"),"\n") %>%
+  select("Name","Year_Signed","Signed Age","Yrs","Value","AAV","Signing Bonus")
+contracts2000$"Year_Signed" <- substring(contracts2000$`Year_Signed`,22,25)
+contracts2000$Name <- trimws(contracts2000$Name,"left")
+
+colnames(contracts2000) <- c("Name","Year_Signed","Signed_Age","Yrs","Value","AAV","Signing_Bonus")
+colnames(contracts2015) <- c("Name","Year_Signed","Signed_Age","Yrs","Value","AAV","Signing_Bonus")
+
+
+c2015 <-  contracts2015 %>%
+  filter(Year_Signed >= 2015 &
+           Year_Signed <= 2020)
+c2000 <- contracts2000 %>%
+  filter(Year_Signed >= 2000 &
+           Year_Signed <= 2005)
+
+mean(as.numeric(c2015$Signed_Age))
+mean(as.numeric(c2000$Signed_Age))
+
+contracts2015 <- c2015 %>%
+  mutate(Value = as.numeric(gsub('[$,]', '', Value))) %>%
+  mutate(APY = Value/Yrs) %>%
+  filter(Signed_Age >= 27)
+
+contracts2000 <- c2000 %>%
+  mutate(Value = as.numeric(gsub('[$,]', '', Value))) %>%
+  mutate(APY = Value/Yrs) %>%
+  filter(Signed_Age >= 27)
+
+mean(contracts2015$Yrs)
+mean(contracts2000$Yrs)
+
+quantile(contracts2015$APY)
+quantile(contracts2000$APY)
+
+allstar2000 <- contracts2000 %>%
+  filter(APY > 10000000)
+
+allstar2015 <- contracts2015 %>%
+  filter(APY > 15000000)
+
+mean(allstar2000$Yrs)
+mean(allstar2015$Yrs)
